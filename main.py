@@ -5,7 +5,7 @@ from ax.service.ax_client import AxClient
 from ax.models.torch.botorch_modular.surrogate import Surrogate
 from ax.modelbridge.registry import Models
 from ax.modelbridge.generation_strategy import GenerationStep, GenerationStrategy
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from gpytorch.constraints.constraints import GreaterThan
 from gpytorch.likelihoods.gaussian_likelihood import (
     GaussianLikelihood,
@@ -31,9 +31,16 @@ import json
 import hydra
 import torch
 from time import time
+import wandb
+
+# Silent Ax and W&B
+import logging
+from ax.utils.common.logger import ROOT_STREAM_HANDLER
+ROOT_STREAM_HANDLER.setLevel(logging.CRITICAL)
+os.environ["WANDB_SILENT"] = "True"
 
 
-@hydra.main(config_path='./configs', config_name='conf')
+@hydra.main(version_base=None, config_path='./configs', config_name='conf')
 def main(cfg: DictConfig) -> None:
     torch.manual_seed(int(cfg.seed))
     np.random.seed(int(cfg.seed))
@@ -126,7 +133,7 @@ def main(cfg: DictConfig) -> None:
         steps=steps
     )
     # Initialize the client - AxClient offers a convenient API to control the experiment
-    ax_client = AxClient(generation_strategy=gs)
+    ax_client = AxClient(generation_strategy=gs, verbose_logging=False)
     # Setup the experiment
     ax_client.create_experiment(
         name=cfg.experiment_name,
@@ -149,6 +156,16 @@ def main(cfg: DictConfig) -> None:
     total_iters = num_init + num_bo
     total_batches = math.ceil((num_init + num_bo) / q)
     current_count = 0
+
+    # Initialize W&B tracker
+    project_name = f"vanillaBO-{cfg.benchmark.name}"
+    wandb_mode = "disabled" if cfg.debug else "online"
+    tracker = wandb.init(
+        project=project_name,
+        entity="",
+        config=OmegaConf.to_container(cfg, resolve=True),
+        mode=wandb_mode
+    )
 
     for i in range(total_batches):
 
@@ -174,11 +191,14 @@ def main(cfg: DictConfig) -> None:
         configs = torch.tensor(
             results_df.loc[:, ['x_' in col for col in results_df.columns]].to_numpy())
 
-        if cfg.benchmark.get('synthetic', True):
+        if cfg.benchmark.get('synthetic', True):  #FIXME: will never 'get' anything?
             for q_idx in range(q_curr):
                 true_vals.append(test_function.evaluate_true(
                     configs[-q_curr + q_idx].unsqueeze(0)).item())
             results_df['True Eval'] = true_vals
+            tracker.log(
+                {"best_found": min(true_vals),
+                 "steps": current_count})
             if current_count > num_init:
                 model = ax_client._generation_strategy.model.model.surrogate.model
                 current_data = ax_client.get_trials_data_frame()[benchmark].to_numpy()
