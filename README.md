@@ -2,7 +2,7 @@
 
 To run any experiment in the paper:
 
-```pip install ax-platform hydra-core```
+```pip install ax-platform==0.3.6 hydra-core wandb```
 
 Then, any of the synthetic benchmarks are runnable.
 
@@ -37,15 +37,22 @@ Other modifiable parameters can be found by checking the various options in ```/
 
 ### Running real-world tasks
 #### Lasso-DNA
-To run Lasso-DNA, clone [LassoBench](https://github.com/ksehic/LassoBench) and add it to PYTHONPATH. Run the DNA task by entering 
-```benchmark=lasso_dna```
+To run Lasso-DNA, clone [LassoBench](https://github.com/ksehic/LassoBench) and install the package using:
+```
+cd LassoBench/
+pip install -e .
+```
+
+Afterwards, run the DNA task by entering ```benchmark=lasso_dna```.
 
 #### MOPTA & SVM
-To run MOPTA and SVM, add [BenchSuite](https://arxiv.org/abs/2304.11468) (modified version included in the repo) to PYTHONPATH:
-```export PYTHONPATH=${PYTHONPATH}:$PWD/BenchSuite```
+To run MOPTA and SVM, install the [BenchSuite](https://arxiv.org/abs/2304.11468) package (modified version included in the repo) using:
+```
+cd BenchSuite/
+pip install -e .
+```
 
- Run either benchmark as
-```benchmark=mopta``` or ```benchmark=svm```.
+Run either benchmark as ```benchmark=mopta``` or ```benchmark=svm```.
 
 #### MuJoCo Ant & Humanoid
 Build the ```recipes/mujoco_container``` with Singularity, and add the container path:

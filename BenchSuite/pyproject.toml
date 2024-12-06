@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "benchsuite"
+version = "0.1.0"
+description = "A brief description of your project"
+authors = [{ name = "Your Name", email = "your.email@example.com" }]
+license = { text = "MIT" }
+
+[project.urls]
+homepage = "https://your.project.homepage"
+repository = "https://github.com/yourusername/yourproject"
+
+[tool.setuptools]
+packages = ["benchsuite"]
